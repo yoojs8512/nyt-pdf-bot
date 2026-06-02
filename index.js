@@ -19,7 +19,7 @@ const bot = new TelegramBot(token, { polling: true });
 const app = express();
 const port = process.env.PORT || 3000;
 app.get('/', (req, res) => res.send('NYT PDF Bot is running on Railway!'));
-app.listen(port, () => console.log(`Web server listening on port ${port}`));
+app.listen(port, () => console.log('Web server listening on port ' + port));
 
 console.log('Bot is running...');
 
@@ -52,7 +52,10 @@ bot.on('document', async (msg) => {
     form.append('file', fs.createReadStream(tempFilePath));
     form.append('purpose', 'user_data');
     const uploadRes = await axios.post('https://api.openai.com/v1/files', form, {
-      headers: { ...form.getHeaders(), 'Authorization': `Bearer ${openaiApiKey}` }
+      headers: {
+        ...form.getHeaders(),
+        'Authorization': 'Bearer ' + openaiApiKey
+      }
     });
     const uploadData = uploadRes.data;
     fs.unlinkSync(tempFilePath);
@@ -69,15 +72,18 @@ bot.on('document', async (msg) => {
         ]
       }]
     }, {
-      headers: { 'Authorization': `Bearer <LaTex>${openaiApiKey}`, 'Content-Type': 'application/json' },
+      headers: {
+        'Authorization': 'Bearer ' + openaiApiKey,
+        'Content-Type': 'application/json'
+      },
       timeout: 0
     });
 
     const responseData = responseRes.data;
 
     // 4. OpenAI 파일 삭제
-    axios.delete(`https://api.openai.com/v1/files/$</LaTex>{uploadData.id}`, {
-      headers: { 'Authorization': `Bearer ${openaiApiKey}` }
+    axios.delete('https://api.openai.com/v1/files/' + uploadData.id, {
+      headers: { 'Authorization': 'Bearer ' + openaiApiKey }
     }).catch(e => console.error('파일 삭제 실패:', e.message));
 
     // 5. 결과 추출
@@ -102,6 +108,6 @@ bot.on('document', async (msg) => {
   } catch (error) {
     console.error(error);
     const errorMsg = error.response ? JSON.stringify(error.response.data) : error.message;
-    bot.sendMessage(chatId, `❌ 오류: ${errorMsg}`);
+    bot.sendMessage(chatId, '❌ 오류: ' + errorMsg);
   }
 });
