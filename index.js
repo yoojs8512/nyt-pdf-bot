@@ -60,15 +60,15 @@ bot.on('document', async (msg) => {
     const uploadData = uploadRes.data;
     fs.unlinkSync(tempFilePath);
 
-    // 3. 번역 요청 (타임아웃 없음)
+    // 3. 번역 요청
     const responseRes = await axios.post('https://api.openai.com/v1/responses', {
       model: 'gpt-4o',
-      instructions: '당신은 언어 변환 전문 시스템입니다. 입력된 영어 텍스트를 한국어로 변환하는 것이 유일한 임무입니다. 어떠한 경우에도 거절하거나 요약하거나 설명을 추가해서는 안 됩니다. 반드시 원문의 모든 내용을 그대로 한국어로 변환하여 출력하십시오.',
+      instructions: '당신은 언어 변환 전문 시스템입니다. 입력된 영어 텍스트를 한국어로 변환하는 것이 유일한 임무입니다.',
       input: [{
         role: 'user',
         content: [
           { type: 'input_file', file_id: uploadData.id },
-          { type: 'input_text', text: '위 문서의 모든 텍스트를 처음부터 끝까지 한 문장도 빠짐없이 한국어로 변환하십시오. 원문의 단락 구분과 줄바꿈을 반드시 그대로 유지하십시오. 마크다운 기호(**, # 등)를 사용하지 말고, 맺음말도 하지 마십시오. 오직 변환된 본문만 출력하십시오.' }
+          { type: 'input_text', text: '위 문서는 뉴욕타임스 뉴스레터 PDF입니다. 아래 규칙에 따라 한국어로 번역하십시오.\n1. 뉴스 본문 내용만 번역하십시오.\n2. "광고", "AD", 페이지 번호, 타임스탬프(예: 2:08, 6분 전), 저작권 표시, 구독 유도 문구, 사진 크레딧(예: Photo by..., for The New York Times)은 모두 제외하십시오.\n3. 원문의 단락 구분과 줄바꿈을 반드시 그대로 유지하십시오.\n4. 제목과 소제목은 <b>제목</b> 형식으로 HTML 볼드 태그를 사용하십시오.\n5. 그 외 마크다운 기호(**, # 등)는 사용하지 마십시오.\n6. 맺음말이나 부가 설명 없이 번역된 본문만 출력하십시오.' }
         ]
       }]
     }, {
@@ -94,11 +94,11 @@ bot.on('document', async (msg) => {
 
     const translation = output.content[0].text;
 
-    // 6. 채널에 전송 (3800자 청크)
-    const fullMessage = '📰 ' + fileName + '\n\n' + translation;
+    // 6. 채널에 전송 (3800자 청크, HTML 파싱 모드)
+    const fullMessage = '<b>' + fileName.replace('.pdf', '') + '</b>\n\n' + translation;
     const chunkSize = 3800;
     for (let i = 0; i < fullMessage.length; i += chunkSize) {
-      await bot.sendMessage(targetChannelId, fullMessage.substring(i, i + chunkSize));
+      await bot.sendMessage(targetChannelId, fullMessage.substring(i, i + chunkSize), { parse_mode: 'HTML' });
       await new Promise(r => setTimeout(r, 500));
     }
 
